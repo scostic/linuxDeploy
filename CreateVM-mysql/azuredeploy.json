@@ -1,0 +1,176 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "_artifactsLocation": {
+            "type": "string",
+            "defaultValue": "https://github.com/scostic/testRepo/tree/main/CreateVM/",
+            "metadata": { 
+                "description": "Artfacts location."
+            }
+        }
+    },
+    "functions": [],
+    "variables": {"customData": "[concat('#include\n',uri(parameters('_artifactsLocation'),'Cloud-Init.txt'))]"},
+    "resources": [{
+        "name": "[toLower('scosticVM1storage')]",
+        "type": "Microsoft.Storage/storageAccounts",
+        "apiVersion": "2019-06-01",
+        "location": "westeurope",
+        "tags": {
+            "displayName": "scosticVM1 Storage Account"
+        },
+        "sku": {
+            "name": "Standard_LRS"
+        },
+        "kind": "StorageV2"
+    },
+    {
+        "name": "scosticVM1-PublicIP",
+        "type": "Microsoft.Network/publicIPAddresses",
+        "apiVersion": "2019-11-01",
+        "location": "westeurope",
+        "tags": {
+            "displayName": "PublicIPAddress"
+        },
+        "properties": {
+            "publicIPAllocationMethod": "Dynamic",
+            "dnsSettings": {
+                "domainNameLabel": "[toLower('scosticVM1')]"
+            }
+        }
+    },
+    {
+        "name": "scosticVM1-nsg",
+        "type": "Microsoft.Network/networkSecurityGroups",
+        "apiVersion": "2018-08-01",
+        "location": "westeurope",
+        "properties": {
+            "securityRules": [
+                {
+                    "name": "nsgRule1",
+                    "properties": {
+                        "description": "description",
+                        "protocol": "Tcp",
+                        "sourcePortRange": "*",
+                        "destinationPortRange": "22",
+                        "sourceAddressPrefix": "*",
+                        "destinationAddressPrefix": "*",
+                        "access": "Allow",
+                        "priority": 100,
+                        "direction": "Inbound"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "name": "scosticVM1-VirtualNetwork",
+        "type": "Microsoft.Network/virtualNetworks",
+        "apiVersion": "2019-11-01",
+        "location": "westeurope",
+        "dependsOn": [
+            "[resourceId('Microsoft.Network/networkSecurityGroups', 'scosticVM1-nsg')]"
+        ],
+        "tags": {
+            "displayName": "scosticVM1-VirtualNetwork"
+        },
+        "properties": {
+            "addressSpace": {
+                "addressPrefixes": [
+                    "10.0.0.0/16"
+                ]
+            },
+            "subnets": [
+                {
+                    "name": "scosticVM1-VirtualNetwork-Subnet",
+                    "properties": {
+                        "addressPrefix": "10.0.0.0/24",
+                        "networkSecurityGroup": {
+                            "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'scosticVM1-nsg')]"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "name": "scosticVM1-NetworkInterface",
+        "type": "Microsoft.Network/networkInterfaces",
+        "apiVersion": "2019-11-01",
+        "location": "westeurope",
+        "dependsOn": [
+            "[resourceId('Microsoft.Network/publicIPAddresses', 'scosticVM1-PublicIP')]",
+            "[resourceId('Microsoft.Network/virtualNetworks', 'scosticVM1-VirtualNetwork')]"
+        ],
+        "tags": {
+            "displayName": "scosticVM1-NetworkInterface"
+        },
+        "properties": {
+            "ipConfigurations": [
+                {
+                    "name": "ipConfig1",
+                    "properties": {
+                        "privateIPAllocationMethod": "Dynamic",
+                        "publicIPAddress": {
+                            "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'scosticVM1-PublicIP')]"
+                        },
+                        "subnet": {
+                            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'scosticVM1-VirtualNetwork', 'scosticVM1-VirtualNetwork-Subnet')]"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "name": "scosticVM1",
+        "type": "Microsoft.Compute/virtualMachines",
+        "apiVersion": "2019-07-01",
+        "location": "westeurope",
+        "dependsOn": [
+            "[resourceId('Microsoft.Network/networkInterfaces', 'scosticVM1-NetworkInterface')]"
+        ],
+        "tags": {
+            "displayName": "scosticVM1"
+        },
+        "properties": {
+            "hardwareProfile": {
+                "vmSize": "Standard_B2s"
+            },
+            "osProfile": {
+                "computerName": "scosticVM1",
+                "adminUsername": "scostic",
+                "adminPassword": "scosticP@ssw0rd!",
+				"customData": "[base64(concat('#cloud-config\npackage_update: true\npackages:\n - iperf\nruncmd:\n - mkdir /firstrun\n - [ wget, \"http://slashdot.org\", -O, /firstrun/index.html ]\n'))]"
+            },
+            "storageProfile": {
+                "imageReference": {
+                    "publisher": "Canonical",
+                    "offer": "UbuntuServer",
+                    "sku": "18.04-LTS",
+                    "version": "latest"
+                },
+                "osDisk": {
+                    "name": "scosticVM1-OSDisk",
+                    "caching": "ReadWrite",
+                    "createOption": "FromImage"
+                }
+            },
+            "networkProfile": {
+                "networkInterfaces": [
+                    {
+                        "id": "[resourceId('Microsoft.Network/networkInterfaces', 'scosticVM1-NetworkInterface')]"
+                    }
+                ]
+            },
+            "diagnosticsProfile": {
+                "bootDiagnostics": {
+                    "enabled": true,
+                    "storageUri": "[reference(resourceId('Microsoft.Storage/storageAccounts/', toLower('scosticVM1storage'))).primaryEndpoints.blob]"
+                }
+            }
+        }
+    }],
+    "outputs": {}
+}
