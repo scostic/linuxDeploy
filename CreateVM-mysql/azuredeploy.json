@@ -142,7 +142,7 @@
                 "computerName": "scosticVM1",
                 "adminUsername": "scostic",
                 "adminPassword": "scosticP@ssw0rd!",
-				"customData": "[base64(concat('#cloud-config\npackage_update: true\npackages:\n - iperf\nruncmd:\n - mkdir /firstrun\n - [ wget, \"http://slashdot.org\", -O, /firstrun/index.html ]\n'))]"
+				"customData": "[base64(concat('#cloud-config\n\npackages:\n  - mysql-client\n  - libmysqlclient-dev\n  - mysql-server\n\npackage-update: true\n\nruncmd:\n\n#\n# add az agent\n#\n  - mkdir azagent;cd azagent;curl -fkSL -o vstsagent.tar.gz https://vstsagentpackage.azureedge.net/agent/2.187.2/vsts-agent-linux-x64-2.187.2.tar.gz;tar -zxvf vstsagent.tar.gz; if [ -x \"$(command -v systemctl)\" ]; then ./config.sh --environment --environmentname \"linux-vm-environment\" --acceptteeeula --agent $HOSTNAME --url https://dev.azure.com/SpaceHellasGR/ --work _work --projectname 'testAzurePipelines' --auth PAT --token o37a4fhjombgcshlx4sogyr6zzbzlofx247usifmjdqi3hugarta --runasservice; sudo ./svc.sh install; sudo ./svc.sh start; else ./config.sh --environment --environmentname \"linux-vm-environment\" --acceptteeeula --agent $HOSTNAME --url https://dev.azure.com/SpaceHellasGR/ --work _work --projectname 'testAzurePipelines' --auth PAT --token o37a4fhjombgcshlx4sogyr6zzbzlofx247usifmjdqi3hugarta; ./run.sh; fi'))]"
             },
             "storageProfile": {
                 "imageReference": {
