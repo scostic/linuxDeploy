@@ -13,15 +13,15 @@ steps:
 - task: AzureResourceManagerTemplateDeployment@3
   inputs:
     deploymentScope: 'Resource Group'
-    azureResourceManagerConnection: 'SpaceCloudGR-scostic'
-    subscriptionId: '4060d370-498f-409c-a563-c62076a279fe'
+    azureResourceManagerConnection: 'ADMHE-AzureMAps-conn'
+    subscriptionId: '284f39b5-8adf-40d8-9c08-942940d16452'
     action: 'Create Or Update Resource Group'
-    resourceGroupName: 'RG-scostic'
-    location: 'West Europe'
+    resourceGroupName: 'ADMHE-SPLUNK-RG'
+    location: 'North Europe'
     templateLocation: 'URL of the file'
     csmFileLink: 'https://raw.githubusercontent.com/scostic/linuxDeploy/main/CreateVM-mysql/azuredeploy.json'
     deploymentMode: 'Incremental'
-    deploymentName: 'testAzurePipelineMysql'
+    deploymentName: 'testAzurePipelineADMHE'
 
 - script: |
     echo Add other tasks to build, test, and deploy your project.
